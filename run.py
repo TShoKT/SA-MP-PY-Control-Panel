@@ -316,7 +316,7 @@ class Samp():
 		except Exception as e:
 			CJERROR()
 			print(e)
-			write("If you see a bug, raise it here\n")
+			write("If you see a bug, raise it here\nhttps://github.com/TShoKT/SA-MP-PY-Control-Panel/issues")
 			Continuation()
 
 Samp()#RUN
