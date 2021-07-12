@@ -59,6 +59,14 @@ class Samp():
 		write("Please enter your server's rcon password: ")
 		self.Password = input()
 		self.Start()
+
+	def samp_client(func):
+		def wrapper(self):
+			with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=str(self.Password)) as client:
+				func(self, client)
+		return wrapper
+
+
 	def Show_Status(self):
 		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=str(self.Password)) as client:
 			info = client.get_server_info()
@@ -82,78 +90,85 @@ class Samp():
 |~	weburl => {Rules['weburl']}
 |~	Worldtime => {Rules['worldtime']}
 			\n""",0.005)
-	def _0(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			for i in client.rcon_cmdlist():
-				write(f"{i}\n",0.003)
+	@samp_client
+	def _0(self, client):
+		for i in client.rcon_cmdlist():
+			write(f"{i}\n",0.003)
 
-	def _1(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			write("Please enter your Rcon command: ")
-			cmd = str(input())
-			client.send_rcon_command(cmd)
-			write("Your command was sent successfully\n")
+	@samp_client
+	def _1(self, client):
+		write("Please enter your Rcon command: ")
+		cmd = str(input())
+		client.send_rcon_command(cmd)
+		write("Your command was sent successfully\n")
 
-	def _2(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			client.rcon_gmx()
-			write("The server is restarting!\n")
-	def _3(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			if not client.rcon_players():
+	@samp_client	
+	def _2(self, client):
+		client.rcon_gmx()
+		write("The server is restarting!\n")
+
+	@samp_client		
+	def _3(self, client):
+		if not client.rcon_players():
+			CJERROR()
+			write("No player is currently playing in the server.\n")
+		else:
+			l = "List of Players:\n"
+			for i in client.get_server_clients_detailed():
+				l+=f"ID: {i.id}, Name: {i.name}, Score: {i.score}, Ping: {i.ping}\n"
+			write(f"{l}\n-----------------------------------------------------------\n",0.001)
+
+	@samp_client
+	def _4(self, client):
+		write("Please enter your message: ")
+		msg = str(input())
+		client.rcon_say(msg)
+		write(f"*Admin: {msg}\n")
+
+	@samp_client		
+	def _5(self, client):
+		client.rcon_exit()
+		write("The server is now offline!\n")
+
+	@samp_client
+	def _6(self, client):
+		write("Please enter your new Rcon password: ")
+		rpass = str(input())
+		client.rcon_set_rcon_password(rpass)
+
+	@samp_client
+	def _7(self, client):
+		self.Show_Status()
+
+	@samp_client
+	def _8(self, client):
+		write("What do you want to do with FilterScript? | Options[reload, load ,unload, cancel]: ")
+		Option = str(input())
+		Options = ["load", "reload", "unload","cancel"]
+		Option = Option.replace(" ", "", Option.count(" ")).lower()
+		if Option not in Options:
+			CJERROR()
+			write("Invalid Option\n")
+			return self._8()
+		else:
+			write("Please enter your FilterScript name: ")
+			fsname = str(input())
+			try:
+				if Option == Options[0]:
+					client.rcon_loadfs(fsname)
+				elif Option == Options[1]:
+					client.rcon_reloadfs(fsname)
+				elif Option == Options[2]:
+					client.rcon_unloadfs(fsname)
+				elif Option == Options[3]:
+					pass	
+			except SampError:
 				CJERROR()
-				write("No player is currently playing in the server.\n")
-			else:
-				l = "List of Players:\n"
-				for i in client.get_server_clients_detailed():
-					l+=f"ID: {i.id}, Name: {i.name}, Score: {i.score}, Ping: {i.ping}\n"
-				write(f"{l}\n-----------------------------------------------------------\n",0.001)
-	def _4(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:			
-			write("Please enter your message: ")
-			msg = str(input())
-			client.rcon_say(msg)
-			write(f"*Admin: {msg}\n")
-	def _5(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:			
-			client.rcon_exit()
-			write("The server is now offline!\n")
-	def _6(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			write("Please enter your new Rcon password: ")
-			rpass = str(input())
-			client.rcon_set_rcon_password(rpass)
-	def _7(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			self.Show_Status()
-	def _8(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			write("What do you want to do with FilterScript? | Options[reload, load ,unload, cancel]: ")
-			Option = str(input())
-			Options = ["load", "reload", "unload","cancel"]
-			Option = Option.replace(" ", "", Option.count(" ")).lower()
-			if Option not in Options:
-				CJERROR()
-				write("Invalid Option\n")
-				self._8()
-			else:
-				write("Please enter your FilterScript name: ")
-				fsname = str(input())
-				try:
-					if Option == Options[0]:
-						client.rcon_loadfs(fsname)
-					elif Option == Options[1]:
-						client.rcon_reloadfs(fsname)
-					elif Option == Options[2]:
-						client.rcon_unloadfs(fsname)
-					elif Option == Options[3]:
-						pass	
-				except SampError:
-					CJERROR()
-					write("Invalid FilterScript name\n")
-	def _9(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			write("""
+				write("Invalid FilterScript name\n")
+
+	@samp_client
+	def _9(self, client):
+		write("""
 -Set HostName(0)
 -Set ModeText(1)
 -Set Language(2)
@@ -162,118 +177,119 @@ class Samp():
 -Set Weahter(5)
 -Set Weburl(6)
 			\n""")
-			try:
-				f = int(input("Give number of feature: "))
-			except ValueError:
-				CJERROR()
-				write("Please enter number!")
-				self._9()
-			if f == 0:
-				write("Please enter your new Hostname: ")
-				n = str(input())
-				client.rcon_set_hostname(n)
-				write(f"Hostname changed to {n}\n")
-			elif f == 1:
-				write("Please enter your new Modetext: ")
-				n = str(input())
-				client.rcon_set_gamemodetext(n)
-				write(f"Modetext changed to {n}\n")
-			elif f == 2:
-				write("Please enter your new Language: ")
-				lang = str(input())
-				client.rcon_set_language(lang)
-				write(f"Language changed to {lang}\n")
-			elif f == 3:
-				write("Please enter your new password or cancel: ")
-				pw = str(input())
-				if pw.lower() == "cancel":
-					print("Ok")
+		try:
+			f = int(input("Give number of feature: "))
+		except ValueError:
+			CJERROR()
+			write("Please enter number!")
+			return self._9()
+		if f == 0:
+			write("Please enter your new Hostname: ")
+			n = str(input())
+			client.rcon_set_hostname(n)
+			write(f"Hostname changed to {n}\n")
+		elif f == 1:
+			write("Please enter your new Modetext: ")
+			n = str(input())
+			client.rcon_set_gamemodetext(n)
+			write(f"Modetext changed to {n}\n")
+		elif f == 2:
+			write("Please enter your new Language: ")
+			lang = str(input())
+			client.rcon_set_language(lang)
+			write(f"Language changed to {lang}\n")
+		elif f == 3:
+			write("Please enter your new password or cancel: ")
+			pw = str(input())
+			if pw.lower() == "cancel":
+				print("Ok")
+			else:
+				client.rcon_set_password(pw)
+				write(f"Password changed to {pw}\n")
+		elif f == 4:
+			write("Please enter your new Mapname: ")
+			mname = str(input())
+			client.rcon_set_mapname(mname)
+			write(f"Mapname changed to {mname}\n")
+		elif f == 5:
+			def get_weatherID():
+				write("Please enter your new Weather ID: ")
+				wid = str(input())
+				if wid.isnumeric():
+					client.rcon_weather(wid)
+					write(f"Weahter ID changed to {wid}\n")
 				else:
-					client.rcon_set_password(pw)
-					write(f"Password changed to {pw}\n")
-			elif f == 4:
-				write("Please enter your new Mapname: ")
-				mname = str(input())
-				client.rcon_set_mapname(mname)
-				write(f"Mapname changed to {mname}\n")
-			elif f == 5:
-				def get_weatherID():
-					write("Please enter your new Weather ID: ")
-					wid = str(input())
-					if wid.isnumeric():
-						client.rcon_weather(wid)
-						write(f"Weahter ID changed to {wid}\n")
-					else:
-						write("Please enter number!\n")
-						return get_weatherID()
-				get_weatherID()
-			elif f == 6:
-				write("Please enter your new weburl: ")
-				url = str(input())
-				client.rcon_set_weburl(url)
-				write(f"Weburl changed to {url}\n")
-			else:
-				CJERROR()
-				write("Invalid number\n")
-	def _10(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			write("Please enter Gamemode name: ")
-			Gamemode = str(input())
-			client.rcon_changemode(Gamemode)
-			write(f"Gamemode changed to {Gamemode}\n")
+					write("Please enter number!\n")
+					return get_weatherID()
+			get_weatherID()
+		elif f == 6:
+			write("Please enter your new weburl: ")
+			url = str(input())
+			client.rcon_set_weburl(url)
+			write(f"Weburl changed to {url}\n")
+		else:
+			CJERROR()
+			write("Invalid number\n")
 
-	def _11(self):
-		with SampClient(address=str(self.Address), port=int(self.Port), rcon_password=self.Password) as client:
-			write("Please select one of the options | Options[kick, ban, banip, cancel]: ")
-			Option = str(input())
-			Options =["kick", "ban", "banip", "cancel"]
-			Option = Option.replace(" ", "", Option.count(" ")).lower()
-			def isnameorid(string, action):
-				if action == "kick":
-					if string.isnumeric():
-						client.rcon_kick(string)
-					else:
-						pnames = [i.name.lower() for i in client.get_server_clients_detailed()]
-						if string.lower() not in pnames:
-							CJERROR()
-							write("That player is not connected on server!\n")
-						else:
-							for player in client.get_server_clients_detailed():
-								if player.name.lower() == string.lower():
-									client.rcon_kick(player.id)
+	@samp_client
+	def _10(self, client):
+		write("Please enter Gamemode name: ")
+		Gamemode = str(input())
+		client.rcon_changemode(Gamemode)
+		write(f"Gamemode changed to {Gamemode}\n")
 
-				elif action == "ban":
-					if string.isnumeric():
-						client.rcon_ban(string)
+	@samp_client
+	def _11(self, client):
+		write("Please select one of the options | Options[kick, ban, banip, cancel]: ")
+		Option = str(input())
+		Options =["kick", "ban", "banip", "cancel"]
+		Option = Option.replace(" ", "", Option.count(" ")).lower()
+		def isnameorid(string, action):
+			if action == "kick":
+				if string.isnumeric():
+					client.rcon_kick(string)
+				else:
+					pnames = [i.name.lower() for i in client.get_server_clients_detailed()]
+					if string.lower() not in pnames:
+						CJERROR()
+						write("That player is not connected on server!\n")
 					else:
-						pnames = [i.name.lower() for i in client.get_server_clients_detailed()]
-						if string.lower() not in pnames:
-							CJERROR()
-							write("That player is not connected on server!\n")
-							Exit()
-						else:
-							for player in client.rcon_players():
-								if player.name.lower() == string.lower():
-									client.rcon_ban(player.id)
-			if Option not in Options:
-				CJERROR()
-				write("Invalid Option\n")
-				self._11()
-			else:
-				if Option == Options[0]:
-					write("Please enter player id or name: ")
-					nameorid = str(input())
-					isnameorid(nameorid, Options[0])
-				elif Option == Options[1]:
-					write("Please enter player id or name: ")
-					nameorid = str(input())
-					isnameorid(nameorid, Options[1])
-				elif Option == Options[2]:
-					write("Please enter player ip")
-					ip = str(input())
-					client.rcon_banip(ip)
-				elif Option == Options[3]:
-					pass
+						for player in client.get_server_clients_detailed():
+							if player.name.lower() == string.lower():
+								client.rcon_kick(player.id)
+
+			elif action == "ban":
+				if string.isnumeric():
+					client.rcon_ban(string)
+				else:
+					pnames = [i.name.lower() for i in client.get_server_clients_detailed()]
+					if string.lower() not in pnames:
+						CJERROR()
+						write("That player is not connected on server!\n")
+						Exit()
+					else:
+						for player in client.rcon_players():
+							if player.name.lower() == string.lower():
+								client.rcon_ban(player.id)
+		if Option not in Options:
+			CJERROR()
+			write("Invalid Option\n")
+			return self._11()
+		else:
+			if Option == Options[0]:
+				write("Please enter player id or name: ")
+				nameorid = str(input())
+				isnameorid(nameorid, Options[0])
+			elif Option == Options[1]:
+				write("Please enter player id or name: ")
+				nameorid = str(input())
+				isnameorid(nameorid, Options[1])
+			elif Option == Options[2]:
+				write("Please enter player ip")
+				ip = str(input())
+				client.rcon_banip(ip)
+			elif Option == Options[3]:
+				pass
 
 	def Start(self):
 		try:
@@ -319,4 +335,5 @@ class Samp():
 			write("If you see a bug, raise it here\nhttps://github.com/TShoKT/SA-MP-PY-Control-Panel/issues")
 			Continuation()
 
-Samp()#RUN
+if __name__ == '__main__':	
+	Samp()
